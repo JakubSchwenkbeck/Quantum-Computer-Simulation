@@ -1,6 +1,5 @@
 // quantum_simulator.rs
 
-use std::f32::consts::PI;
 
 // Define a struct to represent a qubit.
 #[derive(Debug, Clone)]
