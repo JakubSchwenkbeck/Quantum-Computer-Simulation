@@ -1,44 +1,52 @@
 // main.rs
 
-use eframe::egui;
-mod quantum_simulator;
+use eframe::{egui, epi};
+
+mod quantum_simulator; // Assuming you have the previous code in quantum_simulator.rs
+
 use quantum_simulator::Qubit;
 
-fn main() -> Result<(), eframe::Error> {
-    eframe::run_native("Quantum Computer Simulator", Default::default(), Box::new(|_cc| {
-        Box::<dyn eframe::App>::new(MyApp::default())
-    }))
-}
-
-#[derive(Default)]
-struct MyApp {
+struct QuantumSimulatorApp {
     qubit: Qubit,
 }
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+impl Default for QuantumSimulatorApp {
+    fn default() -> Self {
+        Self {
+            qubit: Qubit::new(),
+        }
+    }
+}
+
+impl epi::App for QuantumSimulatorApp {
+    fn name(&self) -> &str {
+        "Quantum Simulator"
+    }
+
+    fn update(&mut self, ctx: &egui::CtxRef, _frame: &mut epi::Frame<'_>) {
+        
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label("Quantum Computing Simulator");
+            ui.label("Quantum Simulator");
             
-            if ui.button("Initialize Qubit").clicked() {
-                self.qubit = Qubit::new();
-            }
-
-            if ui.button("Apply Hadamard Gate").clicked() {
-                self.qubit.apply_hadamard();
-            }
-
-            if ui.button("Apply Pauli-X Gate").clicked() {
-                self.qubit.apply_pauli_x();
-            }
-
-            if ui.button("Measure Qubit").clicked() {
-                let result = self.qubit.measure();
-                ui.label(format!("Measurement Result: |{}⟩", result));
-            }
+            ui.horizontal(|ui| {
+                if ui.button("Apply Hadamard").clicked() {
+                    self.qubit.apply_hadamard();
+                }
+                if ui.button("Apply Pauli-X").clicked() {
+                    self.qubit.apply_pauli_x();
+                }
+                if ui.button("Measure").clicked() {
+                    let result = self.qubit.measure();
+                    ui.label(format!("Measurement Result: |{}>", result));
+                }
+            });
 
             let (x, y, z) = self.qubit.bloch_coordinates();
-            ui.label(format!("Bloch Coordinates: ({:.2}, {:.2}, {:.2})", x, y, z));
+            ui.label(format!("Bloch Sphere Coordinates: (x: {:.2}, y: {:.2}, z: {:.2})", x, y, z));
         });
     }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    eframe::run_native(Box::<QuantumSimulatorApp>::default(), eframe::NativeOptions::default())
 }
