@@ -11,12 +11,12 @@ impl Qubit {
         Qubit { alpha: 1.0, beta: 0.0 }
     }
 
-    pub fn new_with_state(alpha: f32, beta: f32) -> Self {
+   /* pub fn new_with_state(alpha: f32, beta: f32) -> Self {
         let mut qubit = Qubit { alpha, beta };
         qubit.normalize();
         qubit
     }
-
+*/
     pub fn apply_hadamard(&mut self) {
         let alpha = self.alpha;
         let beta = self.beta;
