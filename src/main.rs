@@ -32,17 +32,14 @@ impl epi::App for QuantumSimulatorApp {
                 if ui.button("Apply Hadamard").clicked() {
                     self.qubit.apply_hadamard();
                     self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
-
                 }
                 if ui.button("Apply Pauli-X").clicked() {
                     self.qubit.apply_pauli_x();
                     self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
-
                 }
                 if ui.button("Apply Pauli-Z").clicked() {
                     self.qubit.apply_pauli_z(); // New button for Pauli-Z gate
                     self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
-
                 }
                 if ui.button("Measure Manually").clicked() {
                     self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
@@ -52,6 +49,9 @@ impl epi::App for QuantumSimulatorApp {
             // Display Bloch Sphere coordinates
             let (x, y, z) = self.qubit.bloch_coordinates();
             ui.label(format!("Bloch Sphere Coordinates: (x: {:.2}, y: {:.2}, z: {:.2})", x, y, z));
+
+            // Draw Bloch Sphere
+            //draw_bloch_sphere(ui, ctx,x, y);
 
             // Display probabilities for measuring |0> and |1>
             let (prob_zero, prob_one) = self.qubit.probabilities();
@@ -76,6 +76,32 @@ impl epi::App for QuantumSimulatorApp {
     }
 }
 
+/* Function to draw the Bloch sphere in 2D
+fn draw_bloch_sphere(ui: &mut egui::Ui, ctx: &egui::CtxRef, x: f32, y: f32) {
+    // Set sphere properties
+    let radius = 100.0; // Radius of the Bloch sphere
+   // let center = ctx.screen_rect().center(); // Center of the drawing area
+
+    // Draw the circle representing the Bloch sphere
+    ui.painter().circle_filled(center, radius, egui::Color32::from_black_alpha(50));
+    ui.painter().circle_stroke(center, radius, egui::Stroke::new(1.0, egui::Color32::from_black_alpha(50)));
+
+    // Draw axes
+    let x_axis_end = (center.x + radius, center.y);
+    let y_axis_end = (center.x, center.y - radius);
+    let z_axis_end = (center.x, center.y + radius);
+
+    ui.painter().line_segment([center, egui::pos2(x_axis_end.0, x_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(150,0,0)));
+    ui.painter().line_segment([center, egui::pos2(y_axis_end.0, y_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(0,150,0)));
+    ui.painter().line_segment([center, egui::pos2(z_axis_end.0, z_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(0,0,150)));
+
+    // Calculate the position of the qubit on the Bloch sphere
+    let qubit_pos = egui::pos2(center.x + (x * radius), center.y - (y * radius)); // Note: Y-axis is inverted
+
+    // Draw the qubit position on the Bloch sphere
+    ui.painter().circle_filled(qubit_pos, 5.0, egui::Color32::from_rgb_additive(50,50,50));
+}
+*/
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     eframe::run_native(Box::<QuantumSimulatorApp>::default(), eframe::NativeOptions::default())
 }
