@@ -34,6 +34,13 @@ impl Qubit {
         self.beta = -self.beta;
         self.normalize();
     }
+    pub fn apply_pauli_y(&mut self) {
+        let alpha = self.alpha;
+        self.alpha = self.beta * 1.0f32; // i * beta (i represented by multiplication of real part by 1)
+        self.beta = -alpha * 1.0f32;     // -i * alpha
+        self.normalize();
+    }
+    
 
     pub fn measure(&self) -> u32 {
         let probability = self.alpha.powi(2);
