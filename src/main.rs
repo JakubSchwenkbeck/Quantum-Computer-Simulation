@@ -31,15 +31,15 @@ impl epi::App for QuantumSimulatorApp {
             ui.horizontal(|ui| {
                 if ui.button("Apply Hadamard").clicked() {
                     self.qubit.apply_hadamard();
-                    self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
+                 //   self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
                 }
                 if ui.button("Apply Pauli-X").clicked() {
                     self.qubit.apply_pauli_x();
-                    self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
+                   // self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
                 }
                 if ui.button("Apply Pauli-Z").clicked() {
                     self.qubit.apply_pauli_z(); // New button for Pauli-Z gate
-                    self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
+                  //  self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
                 }
                 if ui.button("Measure Manually").clicked() {
                     self.measurement_result = Some(self.qubit.measure()); // Store the measurement result
@@ -86,12 +86,21 @@ fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
     // Draw the circle representing the Bloch sphere
     ui.painter().circle_filled(center, radius, egui::Color32::from_black_alpha(50));
     ui.painter().circle_stroke(center, radius, egui::Stroke::new(1.0, egui::Color32::from_black_alpha(50)));
+    // Position for the label
+    let label_pos = egui::pos2(center.x, center.y - radius - 20.0); // Positioned above the Bloch sphere
 
+    // Draw the label "Bloch sphere:"
+    ui.painter().text(
+        label_pos, 
+        egui::Align2::CENTER_CENTER, 
+        "Bloch sphere:", 
+        egui::TextStyle::Heading, 
+        egui::Color32::WHITE
+    );
     // Draw axes
     let x_axis_end = (center.x + radius, center.y);
     let y_axis_end = (center.x, center.y - radius);
     let z_axis_end = (center.x, center.y + radius);
-
     ui.painter().line_segment([center, egui::pos2(x_axis_end.0, x_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(250,0,0)));
     ui.painter().line_segment([center, egui::pos2(y_axis_end.0, y_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(0,250,0)));
     ui.painter().line_segment([center, egui::pos2(z_axis_end.0, z_axis_end.1)], egui::Stroke::new(1.0, egui::Color32::from_rgb(0,0,250)));
@@ -100,7 +109,7 @@ fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
     let qubit_pos = egui::pos2(center.x + (x * radius), center.y - (y * radius)); // Note: Y-axis is inverted
 
     // Draw the qubit position on the Bloch sphere
-    ui.painter().circle_filled(qubit_pos, 5.0, egui::Color32::from_rgb(50,50,50));
+    ui.painter().circle_filled(qubit_pos, 5.0, egui::Color32::from_rgb(255,255,255));
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
