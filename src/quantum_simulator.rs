@@ -1,3 +1,4 @@
+
 use rand;
 
 #[derive(Debug, Clone)]
@@ -11,12 +12,6 @@ impl Qubit {
         Qubit { alpha: 1.0, beta: 0.0 }
     }
 
-   /* pub fn new_with_state(alpha: f32, beta: f32) -> Self {
-        let mut qubit = Qubit { alpha, beta };
-        qubit.normalize();
-        qubit
-    }
-*/
     pub fn apply_hadamard(&mut self) {
         let alpha = self.alpha;
         let beta = self.beta;
@@ -29,18 +24,18 @@ impl Qubit {
         std::mem::swap(&mut self.alpha, &mut self.beta);
         self.normalize();
     }
-    
+
     pub fn apply_pauli_z(&mut self) {
         self.beta = -self.beta;
         self.normalize();
     }
+
     pub fn apply_pauli_y(&mut self) {
         let alpha = self.alpha;
-        self.alpha = self.beta * 1.0f32; // i * beta (i represented by multiplication of real part by 1)
-        self.beta = -alpha * 1.0f32;     // -i * alpha
+        self.alpha = -self.beta; // -i * beta
+        self.beta = alpha;       // i * alpha
         self.normalize();
     }
-    
 
     pub fn measure(&self) -> u32 {
         let probability = self.alpha.powi(2);
