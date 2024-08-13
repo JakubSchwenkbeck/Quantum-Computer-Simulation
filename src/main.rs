@@ -1,90 +1,25 @@
 use eframe::{egui, epi};
-use rand;
 
-#[derive(Debug, Clone)]
-pub struct Qubit {
-    pub alpha: f32,
-    pub beta: f32,
-}
+mod quantum_simulator;
 
-impl Qubit {
-    pub fn new() -> Self {
-        Qubit { alpha: 1.0, beta: 0.0 }
-    }
-
-    pub fn apply_hadamard(&mut self) {
-        let alpha = self.alpha;
-        let beta = self.beta;
-        self.alpha = (alpha + beta) / (2.0f32).sqrt();
-        self.beta = (alpha - beta) / (2.0f32).sqrt();
-        self.normalize();
-    }
-
-    pub fn apply_pauli_x(&mut self) {
-        std::mem::swap(&mut self.alpha, &mut self.beta);
-        self.normalize();
-    }
-
-    pub fn apply_pauli_z(&mut self) {
-        self.beta = -self.beta;
-        self.normalize();
-    }
-
-    pub fn apply_pauli_y(&mut self) {
-        let alpha = self.alpha;
-        self.alpha = -self.beta; // -i * beta
-        self.beta = alpha;       // i * alpha
-        self.normalize();
-    }
-
-    pub fn measure(&self) -> u32 {
-        let probability = self.alpha.powi(2);
-        if rand::random::<f32>() < probability {
-            0 // |0> state
-        } else {
-            1 // |1> state
-        }
-    }
-
-    pub fn normalize(&mut self) {
-        let norm = (self.alpha.powi(2) + self.beta.powi(2)).sqrt();
-        self.alpha /= norm;
-        self.beta /= norm;
-    }
-
-    pub fn to_string(&self) -> String {
-        format!("|ψ> = {:.2}|0> + {:.2}|1>", self.alpha, self.beta)
-    }
-
-    pub fn probabilities(&self) -> (f32, f32) {
-        (self.alpha.powi(2), self.beta.powi(2))
-    }
-
-    pub fn is_pure(&self) -> bool {
-        self.alpha == 1.0 || self.beta == 1.0
-    }
-
-    pub fn bloch_coordinates(&self) -> (f32, f32, f32) {
-        let theta = 2.0 * (self.alpha.atan2(self.beta).cos() + self.beta.atan2(self.alpha).sin());
-        let phi = (self.alpha.powi(2) - self.beta.powi(2)).atan2(2.0 * self.alpha * self.beta);
-        (theta.cos(), theta.sin() * phi.cos(), theta.sin() * phi.sin())
-    }
-}
+use quantum_simulator::Qubit;
 
 struct QuantumSimulatorApp {
-    qubit: Qubit,
-    measurement_result: Option<u32>, // Store the measurement result
+    qubits: Vec<Qubit>, // Multiple qubits
+    measurement_results: Vec<Option<u32>>, // Store the measurement results for each qubit
     circuit: Vec<String>, // Store the sequence of gates
     tutorial_visible: bool, // Control visibility of the tutorial
+    selected_qubit: usize, // Currently selected qubit to manipulate
 }
 
 impl Default for QuantumSimulatorApp {
     fn default() -> Self {
         Self {
-            qubit: Qubit::new(),
-            measurement_result: None,
+            qubits: vec![Qubit::new()],
+            measurement_results: vec![None],
             circuit: Vec::new(),
             tutorial_visible: false,
+            selected_qubit: 0,
         }
     }
 }
@@ -116,80 +51,149 @@ impl epi::App for QuantumSimulatorApp {
                 });
             }
 
-            // Interactive controls for Alpha and Beta
-            ui.label("Adjust Qubit State:");
+            // Select the qubit to manipulate
+            ui.label("Select Qubit:");
+            for i in 0..self.qubits.len() {
+                if ui.button(format!("Qubit {}", i)).clicked() {
+                    self.selected_qubit = i;
+                }
+            }
+
+            // Interactive controls for Alpha and Beta of the selected qubit
+            ui.label(format!("Adjust Qubit {} State:", self.selected_qubit));
             ui.horizontal(|ui| {
                 ui.label("Alpha:");
-                ui.add(egui::Slider::new(&mut self.qubit.alpha, -1.0..=1.0));
+                ui.add(egui::Slider::new(&mut self.qubits[self.selected_qubit].alpha, -1.0..=1.0));
             });
             ui.horizontal(|ui| {
                 ui.label("Beta:");
-                ui.add(egui::Slider::new(&mut self.qubit.beta, -1.0..=1.0));
+                ui.add(egui::Slider::new(&mut self.qubits[self.selected_qubit].beta, -1.0..=1.0));
             });
 
-            // Buttons to apply quantum gates and measure
+            // Buttons to apply quantum gates to the selected qubit
             ui.horizontal(|ui| {
                 if ui.button("Apply Hadamard").clicked() {
-                    self.qubit.apply_hadamard();
-                    self.circuit.push("Hadamard".to_string());
+                    self.qubits[self.selected_qubit].apply_hadamard();
+                    self.circuit.push(format!("Qubit {}: Hadamard", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-X").clicked() {
-                    self.qubit.apply_pauli_x();
-                    self.circuit.push("Pauli-X".to_string());
+                    self.qubits[self.selected_qubit].apply_pauli_x();
+                    self.circuit.push(format!("Qubit {}: Pauli-X", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-Z").clicked() {
-                    self.qubit.apply_pauli_z();
-                    self.circuit.push("Pauli-Z".to_string());
+                    self.qubits[self.selected_qubit].apply_pauli_z();
+                    self.circuit.push(format!("Qubit {}: Pauli-Z", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-Y").clicked() {
-                    self.qubit.apply_pauli_y();
-                    self.circuit.push("Pauli-Y".to_string());
-                }
-                if ui.button("Measure Manually").clicked() {
-                    self.measurement_result = Some(self.qubit.measure());
+                    self.qubits[self.selected_qubit].apply_pauli_y();
+                    self.circuit.push(format!("Qubit {}: Pauli-Y", self.selected_qubit));
                 }
             });
+
+            // Predefined circuits
+            ui.label("Predefined Circuits:");
+            if ui.button("Bell State Circuit").clicked() {
+                self.circuit.clear(); // Clear previous circuit
+                self.circuit.push("Qubit 0: Hadamard".to_string());
+                self.circuit.push("Qubit 1: Pauli-X".to_string());
+            }
+            if ui.button("Quantum Fourier Transform (QFT)").clicked() {
+                self.circuit.clear(); // Clear previous circuit
+                self.circuit.push("Qubit 0: Hadamard".to_string());
+                self.circuit.push("Qubit 1: Controlled Phase Shift".to_string());
+            }
+
+            // Add a qubit to the circuit
+            if ui.button("Add Qubit").clicked() {
+                self.qubits.push(Qubit::new());
+                self.measurement_results.push(None);
+            }
+
+            // Clear the circuit
+            if ui.button("Clear Circuit").clicked() {
+                self.circuit.clear();
+            }
+
+            // Run the current circuit
+            if ui.button("Run Circuit").clicked() {
+                self.run_circuit();
+            }
 
             // Display the current quantum circuit
             ui.label("Current Circuit:");
             for gate in &self.circuit {
                 ui.label(gate);
             }
+            ui.label("");
 
-            // Display Bloch Sphere coordinates
-            let (x, y, z) = self.qubit.bloch_coordinates();
-            ui.label(format!("Bloch Sphere Coordinates: (x: {:.2}, y: {:.2}, z: {:.2})", x, y, z));
+            // Display Bloch Sphere coordinates of the selected qubit
+            let (x, y, z) = self.qubits[self.selected_qubit].bloch_coordinates();
+            ui.label(format!(
+                "Bloch Sphere Coordinates (Qubit {}): (x: {:.2}, y: {:.2}, z: {:.2})",
+                self.selected_qubit, x, y, z
+            ));
 
             // Draw Bloch Sphere
             draw_bloch_sphere(ui, ctx, x, y);
 
-            // Display probabilities for measuring |0> and |1>
-            let (prob_zero, prob_one) = self.qubit.probabilities();
+            // Display probabilities for measuring |0> and |1> for the selected qubit
+            let (prob_zero, prob_one) = self.qubits[self.selected_qubit].probabilities();
             ui.label(format!("Probability of |0>: {:.2}%", prob_zero * 100.0));
             ui.label(format!("Probability of |1>: {:.2}%", prob_one * 100.0));
 
-            // Display current values of alpha and beta
-            ui.label(format!("Current α (alpha): {:.2}", self.qubit.alpha));
-            ui.label(format!("Current β (beta): {:.2}", self.qubit.beta));
+            // Display current values of alpha and beta of the selected qubit
+            ui.label(format!("Current α (alpha): {:.2}", self.qubits[self.selected_qubit].alpha));
+            ui.label(format!("Current β (beta): {:.2}", self.qubits[self.selected_qubit].beta));
 
             // Display the qubit state in Dirac notation
-            ui.label(format!("Qubit State: {}", self.qubit.to_string()));
+            ui.label(format!("Qubit State: {}", self.qubits[self.selected_qubit].to_string()));
 
             // Display if the qubit is in a pure state
-            ui.label(format!("Is Pure State: {}", self.qubit.is_pure()));
+            ui.label(format!("Is Pure State: {}", self.qubits[self.selected_qubit].is_pure()));
 
-            // Display the measurement result if it exists
-            if let Some(result) = self.measurement_result {
-                ui.label(format!("Measurement Result: |{}>", result));
+            // Display the measurement results for all qubits if they exist
+            for (i, result) in self.measurement_results.iter().enumerate() {
+                if let Some(result) = result {
+                    ui.label(format!("Measurement Result (Qubit {}): |{}>", i, result));
+                }
             }
         });
+    }
+}
+
+impl QuantumSimulatorApp {
+    // Function to run the current circuit
+    fn run_circuit(&mut self) {
+        for gate in &self.circuit {
+            let parts: Vec<&str> = gate.split(": ").collect();
+            let qubit_index = parts[0].replace("Qubit ", "").parse::<usize>().unwrap();
+            let gate_name = parts[1];
+
+            match gate_name {
+                "Hadamard" => self.qubits[qubit_index].apply_hadamard(),
+                "Pauli-X" => self.qubits[qubit_index].apply_pauli_x(),
+                "Pauli-Z" => self.qubits[qubit_index].apply_pauli_z(),
+                "Pauli-Y" => self.qubits[qubit_index].apply_pauli_y(),
+                "Controlled Phase Shift" => self.qubits[qubit_index].apply_controlled_phase_shift(),
+                _ => (),
+            }
+        }
+
+        // Measure the result for each qubit
+        for i in 0..self.qubits.len() {
+            self.measurement_results[i] = Some(self.qubits[i].measure());
+        }
     }
 }
 
 // Function to draw the Bloch sphere in 2D
 fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
     let radius = 100.0; // Radius of the Bloch sphere
-    let center = ui.max_rect().center(); // Center of the drawing area
+    let mut center = ui.max_rect().center(); // Center of the drawing area
+
+    // Shift the center to the right
+    center.x += 75.0; // Adjust this value to move the sphere further right
+    center.y += 25.0; // Adjust this value to move the sphere further right
 
     // Draw the circle representing the Bloch sphere
     ui.painter().circle_filled(center, radius, egui::Color32::from_black_alpha(50));
@@ -210,4 +214,3 @@ fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     eframe::run_native(Box::<QuantumSimulatorApp>::default(), eframe::NativeOptions::default())
 }
-
