@@ -9,7 +9,7 @@ This project is a simple quantum computer simulator implemented in Rust. It allo
 - Visualize the qubit state on the Bloch sphere, including coordinates and probabilities.
   
 
-![image](https://github.com/user-attachments/assets/18452e39-ae13-4b63-a1f4-1a6ae7a4141f)
+![image](https://github.com/user-attachments/assets/b3f1428c-18d4-431c-937f-34c45ed73d18)
 
 
 **Prerequisites:**
