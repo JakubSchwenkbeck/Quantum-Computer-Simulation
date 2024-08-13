@@ -51,42 +51,68 @@ impl epi::App for QuantumSimulatorApp {
                 });
             }
 
-            // Select the qubit to manipulate
-            ui.label("Select Qubit:");
-            for i in 0..self.qubits.len() {
-                if ui.button(format!("Qubit {}", i)).clicked() {
+            // Display all qubits with different colors
+            ui.label("Qubits:");
+            for (i, qubit) in self.qubits.iter().enumerate() {
+                let color = egui::Color32::from_rgb(
+                    100 + (i as u8 * 30) % 155,
+                    100 + (i as u8 * 50) % 155,
+                    250 - (i as u8 * 30) % 155,
+                );
+
+                // Button to select the qubit
+                if ui.button(format!("Select Qubit {}", i)).clicked() {
                     self.selected_qubit = i;
                 }
+
+                // Display Bloch Sphere for each qubit
+                let (x, y, z) = qubit.bloch_coordinates();
+                ui.label(format!("Qubit {}:", i));
+                ui.label(format!("Bloch Sphere Coordinates: (x: {:.2}, y: {:.2}, z: {:.2})", x, y, z));
+                draw_bloch_sphere(ui, ctx, x, y, color);
+                ui.add_space(20.0);
             }
 
+            // Display and control the selected qubit
+            ui.label(format!("Selected Qubit {}:", self.selected_qubit));
+            let selected_qubit = &mut self.qubits[self.selected_qubit];
+            let color = egui::Color32::from_rgb(
+                100 + (self.selected_qubit as u8 * 30) % 155,
+                100 + (self.selected_qubit as u8 * 50) % 155,
+                250 - (self.selected_qubit as u8 * 30) % 155,
+            );
+
             // Interactive controls for Alpha and Beta of the selected qubit
-            ui.label(format!("Adjust Qubit {} State:", self.selected_qubit));
             ui.horizontal(|ui| {
                 ui.label("Alpha:");
-                ui.add(egui::Slider::new(&mut self.qubits[self.selected_qubit].alpha, -1.0..=1.0));
+                ui.add(egui::Slider::new(&mut selected_qubit.alpha, -1.0..=1.0).text("α").text_color(color));
             });
             ui.horizontal(|ui| {
                 ui.label("Beta:");
-                ui.add(egui::Slider::new(&mut self.qubits[self.selected_qubit].beta, -1.0..=1.0));
+                ui.add(egui::Slider::new(&mut selected_qubit.beta, -1.0..=1.0).text("β").text_color(color));
             });
 
             // Buttons to apply quantum gates to the selected qubit
             ui.horizontal(|ui| {
                 if ui.button("Apply Hadamard").clicked() {
-                    self.qubits[self.selected_qubit].apply_hadamard();
+                    selected_qubit.apply_hadamard();
                     self.circuit.push(format!("Qubit {}: Hadamard", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-X").clicked() {
-                    self.qubits[self.selected_qubit].apply_pauli_x();
+                    selected_qubit.apply_pauli_x();
                     self.circuit.push(format!("Qubit {}: Pauli-X", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-Z").clicked() {
-                    self.qubits[self.selected_qubit].apply_pauli_z();
+                    selected_qubit.apply_pauli_z();
                     self.circuit.push(format!("Qubit {}: Pauli-Z", self.selected_qubit));
                 }
                 if ui.button("Apply Pauli-Y").clicked() {
-                    self.qubits[self.selected_qubit].apply_pauli_y();
+                    selected_qubit.apply_pauli_y();
                     self.circuit.push(format!("Qubit {}: Pauli-Y", self.selected_qubit));
+                }
+                if ui.button("Controlled Phase Shift").clicked() {
+                    selected_qubit.apply_controlled_phase_shift();
+                    self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
                 }
             });
 
@@ -108,6 +134,11 @@ impl epi::App for QuantumSimulatorApp {
                 self.qubits.push(Qubit::new());
                 self.measurement_results.push(None);
             }
+            if ui.button("Clear Qubits").clicked() {
+                self.qubits.clear();
+                self.qubits.push(Qubit::new());
+
+            }
 
             // Clear the circuit
             if ui.button("Clear Circuit").clicked() {
@@ -125,31 +156,6 @@ impl epi::App for QuantumSimulatorApp {
                 ui.label(gate);
             }
             ui.label("");
-
-            // Display Bloch Sphere coordinates of the selected qubit
-            let (x, y, z) = self.qubits[self.selected_qubit].bloch_coordinates();
-            ui.label(format!(
-                "Bloch Sphere Coordinates (Qubit {}): (x: {:.2}, y: {:.2}, z: {:.2})",
-                self.selected_qubit, x, y, z
-            ));
-
-            // Draw Bloch Sphere
-            draw_bloch_sphere(ui, ctx, x, y);
-
-            // Display probabilities for measuring |0> and |1> for the selected qubit
-            let (prob_zero, prob_one) = self.qubits[self.selected_qubit].probabilities();
-            ui.label(format!("Probability of |0>: {:.2}%", prob_zero * 100.0));
-            ui.label(format!("Probability of |1>: {:.2}%", prob_one * 100.0));
-
-            // Display current values of alpha and beta of the selected qubit
-            ui.label(format!("Current α (alpha): {:.2}", self.qubits[self.selected_qubit].alpha));
-            ui.label(format!("Current β (beta): {:.2}", self.qubits[self.selected_qubit].beta));
-
-            // Display the qubit state in Dirac notation
-            ui.label(format!("Qubit State: {}", self.qubits[self.selected_qubit].to_string()));
-
-            // Display if the qubit is in a pure state
-            ui.label(format!("Is Pure State: {}", self.qubits[self.selected_qubit].is_pure()));
 
             // Display the measurement results for all qubits if they exist
             for (i, result) in self.measurement_results.iter().enumerate() {
@@ -186,9 +192,9 @@ impl QuantumSimulatorApp {
     }
 }
 
-// Function to draw the Bloch sphere in 2D
-fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
-    let radius = 100.0; // Radius of the Bloch sphere
+// Function to draw the Bloch sphere in 2D with color
+fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32, color: egui::Color32) {
+    let radius = ui.max_rect().height()/(3 as f32); // Radius of the Bloch sphere
     let mut center = ui.max_rect().center(); // Center of the drawing area
 
     // Shift the center to the right
@@ -207,8 +213,8 @@ fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32) {
     // Calculate the position of the qubit on the Bloch sphere
     let qubit_pos = egui::pos2(center.x + (x * radius), center.y - (y * radius)); // Note: Y-axis is inverted
 
-    // Draw the qubit position on the Bloch sphere
-    ui.painter().circle_filled(qubit_pos, 5.0, egui::Color32::from_rgb(255, 255, 255));
+    // Draw the qubit position on the Bloch sphere with color
+    ui.painter().circle_filled(qubit_pos, 5.0, color);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
