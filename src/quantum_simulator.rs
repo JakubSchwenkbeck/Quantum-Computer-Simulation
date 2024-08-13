@@ -1,4 +1,3 @@
-
 use rand;
 
 #[derive(Debug, Clone)]
@@ -37,6 +36,13 @@ impl Qubit {
         self.normalize();
     }
 
+    pub fn apply_controlled_phase_shift(&mut self) {
+        if self.measure() == 1 {
+            self.beta = -self.beta; // Phase shift when the qubit is in the |1> state
+        }
+        self.normalize();
+    }
+
     pub fn measure(&self) -> u32 {
         let probability = self.alpha.powi(2);
         if rand::random::<f32>() < probability {
@@ -65,8 +71,9 @@ impl Qubit {
     }
 
     pub fn bloch_coordinates(&self) -> (f32, f32, f32) {
-        let theta = 2.0 * (self.alpha.atan2(self.beta).cos() + self.beta.atan2(self.alpha).sin());
-        let phi = (self.alpha.powi(2) - self.beta.powi(2)).atan2(2.0 * self.alpha * self.beta);
-        (theta.cos(), theta.sin() * phi.cos(), theta.sin() * phi.sin())
+        let theta = (2.0 * (self.alpha.powi(2) - self.beta.powi(2))).atan2(2.0 * self.alpha * self.beta);
+        let x = theta.cos();
+        let y = theta.sin() * (self.alpha.powi(2) - self.beta.powi(2)).atan();
+        (x, y, 0.0) // z is zero since we're in 2D
     }
 }
