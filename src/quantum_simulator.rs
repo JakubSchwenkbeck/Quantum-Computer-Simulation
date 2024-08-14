@@ -18,6 +18,11 @@ impl Qubit {
         self.beta = (alpha - beta) / (2.0f32).sqrt();
         self.normalize();
     }
+    pub fn apply_cnot(&mut self, target: &mut Qubit) {
+        if self.measure() == 1 {
+            target.apply_pauli_x();
+        }
+    }
 
     pub fn apply_pauli_x(&mut self) {
         std::mem::swap(&mut self.alpha, &mut self.beta);
