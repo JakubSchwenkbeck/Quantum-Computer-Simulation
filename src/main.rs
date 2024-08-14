@@ -114,6 +114,11 @@ impl epi::App for QuantumSimulatorApp {
                     selected_qubit.apply_controlled_phase_shift();
                     self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
                 }
+                if ui.button("Measure manually").clicked() {
+                    self.measurement_results.pop();
+                    self.measurement_results.push(  Some(selected_qubit.measure()));
+                    //self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
+                }
             });
 
             // Predefined circuits
