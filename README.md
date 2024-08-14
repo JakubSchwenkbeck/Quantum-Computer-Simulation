@@ -14,6 +14,10 @@ This project is a simple quantum computer simulator implemented in Rust. It allo
 
 - Bloch Sphere Visualization: Visualize qubit states on the Bloch sphere, showing coordinates and measurement probabilities.
 
+- Density Matrix and Histogram visualization
+
+- Well known Alogrithms such as Grovers Search and Quantum Teleportation
+
 - Dynamic Circuit Simulation: Create, modify, and run quantum circuits, tracking the sequence of applied gates.
 
 - Interactive Sliders: Adjust qubit parameters (α and β) with sliders for real-time exploration.
