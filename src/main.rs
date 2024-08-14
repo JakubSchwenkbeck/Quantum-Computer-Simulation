@@ -123,7 +123,7 @@ impl epi::App for QuantumSimulatorApp {
                       
                     }
                 }*/ 
-                if ui.button("Measure manually").clicked() {
+                if ui.button("Measure ").clicked() {
                     self.measurement_results.pop();
                     self.measurement_results.push(  Some(selected_qubit.measure()));
                     //self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
@@ -148,7 +148,7 @@ impl epi::App for QuantumSimulatorApp {
             if ui.button("Run Circuit").clicked() {
                 self.run_circuit();
                 draw_histogram(ui, &self.measurement_results);
-                draw_density_matrix(ui, &self.qubits[self.selected_qubit]);
+                draw_density_matrix(ui, self.qubits[self.selected_qubit].clone());
             }
       
     
@@ -182,10 +182,12 @@ impl epi::App for QuantumSimulatorApp {
                 self.circuit.clear();
             }
 
-            // Run the current circuit
-            if ui.button("Run Circuit").clicked() {
-                self.run_circuit();
-            }
+            
+            draw_density_matrix(ui,self.qubits[self.selected_qubit].clone()  ); // Pass the temporary variable
+
+            // Histogram
+            draw_histogram(ui, &self.measurement_results);
+    
 
             // Display the current quantum circuit
             ui.label("Current Circuit:");
@@ -256,8 +258,8 @@ fn reconstruct_density_matrix(qubit: &Qubit) -> [[f32; 2]; 2] {
     ]
 }
 
-fn draw_density_matrix(ui: &mut egui::Ui, qubit: &Qubit) {
-    let density_matrix = reconstruct_density_matrix(qubit);
+fn draw_density_matrix(ui: &mut egui::Ui, qubit: Qubit) {
+    let density_matrix = reconstruct_density_matrix(&qubit);
     ui.label("Density Matrix:");
     for row in &density_matrix {
         ui.horizontal(|ui| {
@@ -280,8 +282,8 @@ fn draw_histogram(ui: &mut egui::Ui, measurement_results: &Vec<Option<u32>>) {
         for i in 0..2 {
             let height = counts[i] as f32 * 10.0;
             ui.painter().rect_filled(
-                egui::Rect::from_min_size(
-                    egui::pos2(i as f32 * 15.0 + 10.0, 100.0 - height),
+                egui::Rect::from_min_size( 
+                    egui::pos2(i as f32 * 15.0 + 10.0, 850.0 - height),
                     egui::vec2(10.0, height),
                 ),
                 0.0,
