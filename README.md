@@ -20,7 +20,7 @@ This project is a simple quantum computer simulator implemented in Rust. It allo
 
 - Tutorial: Access a built-in tutorial for easy onboarding to quantum concepts.
 
-![image](https://github.com/user-attachments/assets/54b65b21-4659-45f0-b02e-53dcc587fef6)
+![image](https://github.com/user-attachments/assets/bef51d59-9df9-48f5-8ec9-2dba03421dac)
 
 
 **Prerequisites:**
