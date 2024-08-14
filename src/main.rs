@@ -28,6 +28,7 @@ impl epi::App for QuantumSimulatorApp {
     fn name(&self) -> &str {
         "Quantum Simulator"
     }
+    
 
     fn update(&mut self, ctx: &egui::CtxRef, _frame: &mut epi::Frame<'_>) {
         ctx.set_visuals(egui::Visuals::light()); // Use light visuals for a white background
@@ -114,12 +115,43 @@ impl epi::App for QuantumSimulatorApp {
                     selected_qubit.apply_controlled_phase_shift();
                     self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
                 }
+               /* if ui.button("Apply CNOT").clicked() {
+                    if self.qubits.len() > 1 {
+                        let target_qubit_index = (self.selected_qubit + 1) % self.qubits.len();
+                        let target_qubit = &mut self.qubits[target_qubit_index];
+                        selected_qubit.apply_cnot( target_qubit);
+                      
+                    }
+                }*/ 
                 if ui.button("Measure manually").clicked() {
                     self.measurement_results.pop();
                     self.measurement_results.push(  Some(selected_qubit.measure()));
                     //self.circuit.push(format!("Qubit {}: Controlled Phase Shift", self.selected_qubit));
                 }
             });
+            // Add predefined algorithms to the circuit
+            ui.label("Predefined Algorithms:");
+            if ui.button("Grover's Search").clicked() {
+                self.add_predefined_algorithm("Grover");
+            }
+            if ui.button("Quantum Teleportation").clicked() {
+                self.add_predefined_algorithm("Teleportation");
+            }
+
+            // Display the current quantum circuit
+            ui.label("Current Circuit:");
+            for gate in &self.circuit {
+                ui.label(gate);
+            }
+
+            // Run the circuit and show the measurement results
+            if ui.button("Run Circuit").clicked() {
+                self.run_circuit();
+                draw_histogram(ui, &self.measurement_results);
+                draw_density_matrix(ui, &self.qubits[self.selected_qubit]);
+            }
+      
+    
 
             // Predefined circuits
             ui.label("Predefined Circuits:");
@@ -195,7 +227,72 @@ impl QuantumSimulatorApp {
             self.measurement_results[i] = Some(self.qubits[i].measure());
         }
     }
+    fn add_predefined_algorithm(&mut self, algorithm: &str) {
+        self.circuit.clear();
+        match algorithm {
+            "Grover" => {
+                self.circuit.push("Qubit 0: Hadamard".to_string());
+                self.circuit.push("Qubit 1: Hadamard".to_string());
+                self.circuit.push("Qubit 0: Pauli-X".to_string());
+                self.circuit.push("Qubit 1: Controlled Phase Shift".to_string());
+            }
+            "Teleportation" => {
+                self.circuit.push("Qubit 0: Hadamard".to_string());
+                self.circuit.push("Qubit 1: Controlled Phase Shift".to_string());
+                self.circuit.push("Qubit 0: Measure".to_string());
+                self.circuit.push("Qubit 1: Pauli-X".to_string());
+            }
+            _ => (),
+        }
+    }
+    
 }
+fn reconstruct_density_matrix(qubit: &Qubit) -> [[f32; 2]; 2] {
+    let alpha2 = qubit.alpha.powi(2);
+    let beta2 = qubit.beta.powi(2);
+    [
+        [alpha2, qubit.alpha * qubit.beta],
+        [qubit.alpha * qubit.beta, beta2],
+    ]
+}
+
+fn draw_density_matrix(ui: &mut egui::Ui, qubit: &Qubit) {
+    let density_matrix = reconstruct_density_matrix(qubit);
+    ui.label("Density Matrix:");
+    for row in &density_matrix {
+        ui.horizontal(|ui| {
+            for &value in row.iter() {
+                ui.label(format!("{:.2}", value));
+            }
+        });
+    }
+}
+fn draw_histogram(ui: &mut egui::Ui, measurement_results: &Vec<Option<u32>>) {
+    let mut counts = vec![0; 2]; // Assuming two possible outcomes (0 or 1)
+    for result in measurement_results {
+        if let Some(res) = result {
+            counts[*res as usize] += 1;
+        }
+    }
+
+    ui.horizontal(|ui| {
+        ui.label("Measurement Histogram:");
+        for i in 0..2 {
+            let height = counts[i] as f32 * 10.0;
+            ui.painter().rect_filled(
+                egui::Rect::from_min_size(
+                    egui::pos2(i as f32 * 15.0 + 10.0, 100.0 - height),
+                    egui::vec2(10.0, height),
+                ),
+                0.0,
+                egui::Color32::from_gray(150),
+            );
+            ui.label(format!("{}", counts[i]));
+        }
+    });
+}
+
+
 
 // Function to draw the Bloch sphere in 2D with color
 fn draw_bloch_sphere(ui: &mut egui::Ui, _ctx: &egui::Context, x: f32, y: f32, color: egui::Color32) {
